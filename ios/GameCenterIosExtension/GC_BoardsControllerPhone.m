@@ -35,14 +35,14 @@
 - (void)leaderboardViewControllerDidFinish:(GKLeaderboardViewController *)viewController
 {
     [self dismissModalViewControllerAnimated:YES];
-    [self.view.superview removeFromSuperview];
+    [self.view removeFromSuperview];
     FREDispatchStatusEventAsync(context, "", gameCenterViewRemoved);
 }
 
 - (void)achievementViewControllerDidFinish:(GKLeaderboardViewController *)viewController
 {
     [self dismissModalViewControllerAnimated:YES];
-    [self.view.superview removeFromSuperview];
+    [self.view removeFromSuperview];
     FREDispatchStatusEventAsync(context, "", gameCenterViewRemoved);
 }
 
