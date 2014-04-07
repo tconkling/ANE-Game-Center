@@ -36,6 +36,8 @@
 {
     [self dismissModalViewControllerAnimated:YES];
     [self.view removeFromSuperview];
+    [self.win becomeFirstResponder];
+    [self.win makeKeyAndVisible];
     FREDispatchStatusEventAsync(context, "", gameCenterViewRemoved);
 }
 
@@ -43,6 +45,8 @@
 {
     [self dismissModalViewControllerAnimated:YES];
     [self.view removeFromSuperview];
+    [self.win becomeFirstResponder];
+    [self.win makeKeyAndVisible];
     FREDispatchStatusEventAsync(context, "", gameCenterViewRemoved);
 }
 
