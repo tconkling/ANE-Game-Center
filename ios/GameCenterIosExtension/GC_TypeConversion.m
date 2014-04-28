@@ -12,7 +12,7 @@
 #define ASScore "com.sticksports.nativeExtensions.gameCenter.GCScore"
 #define ASAchievement "com.sticksports.nativeExtensions.gameCenter.GCAchievement"
 
-@implementation TypeConversion
+@implementation GC_TypeConversion
 
 - (FREResult) FREGetObject:(FREObject)object asString:(NSString**)value
 {

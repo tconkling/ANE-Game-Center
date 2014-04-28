@@ -27,7 +27,7 @@
 @property FREContext context;
 @property (retain)NSMutableDictionary* returnObjects;
 @property (retain)id<BoardsController> boardsController;
-@property (retain)TypeConversion* converter;
+@property (retain)GC_TypeConversion* converter;
 
 @end
 
@@ -42,7 +42,7 @@
     {
         context = extensionContext;
         returnObjects = [[NSMutableDictionary alloc] init];
-        converter = [[TypeConversion alloc] init];
+        converter = [[GC_TypeConversion alloc] init];
     }
     return self;
 }
@@ -67,7 +67,7 @@
     NSString* key;
     do
     {
-        key = [NSString stringWithFormat: @"%i", random()];
+        key = [NSString stringWithFormat: @"%li", random()];
     } while ( [self.returnObjects valueForKey:key] != nil );
     [self.returnObjects setValue:object forKey:key];
     return key;

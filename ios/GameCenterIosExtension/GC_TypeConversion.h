@@ -10,7 +10,7 @@
 #import <GameKit/GameKit.h>
 #import "FlashRuntimeExtensions.h"
 
-@interface TypeConversion : NSObject
+@interface GC_TypeConversion : NSObject
 
 - (FREResult) FREGetObject:(FREObject)object asString:(NSString**)value;
 
