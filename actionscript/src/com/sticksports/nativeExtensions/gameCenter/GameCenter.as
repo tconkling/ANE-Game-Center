@@ -2,12 +2,13 @@ package com.sticksports.nativeExtensions.gameCenter
 {
 	import com.sticksports.nativeExtensions.gameCenter.signals.GCSignal0;
 	import com.sticksports.nativeExtensions.gameCenter.signals.GCSignal1;
-
+	
+	import flash.display.BitmapData;
 	import flash.events.StatusEvent;
 	import flash.external.ExtensionContext;
 
 	public class GameCenter
-	{
+	{		
 		public static var localPlayerAuthenticated : GCSignal0 = new GCSignal0();
 		public static var localPlayerNotAuthenticated : GCSignal0 = new GCSignal0();
 		public static var localPlayerFriendsLoadComplete : GCSignal1 = new GCSignal1( Array );
@@ -23,6 +24,10 @@ package com.sticksports.nativeExtensions.gameCenter
 		public static var achievementsLoadComplete : GCSignal1 = new GCSignal1( Vector );
 		public static var achievementsLoadFailed : GCSignal0 = new GCSignal0();
 		public static var gameCenterViewRemoved : GCSignal0 = new GCSignal0();
+		
+		private static var _loadPlayerPhotoCompleteSignals:Object = {};
+		private static var _loadPlayerPhotoFailedSignals:Object = {};
+		private static var _loadingPlayerPhotos:Object = {};
 		
 		public static var isAuthenticating : Boolean;
 		
@@ -144,6 +149,12 @@ package com.sticksports.nativeExtensions.gameCenter
 					break;
 				case InternalMessages.loadAchievementsFailed :
 					achievementsLoadFailed.dispatch();
+					break;
+				case InternalMessages.loadPlayerPhotoComplete:
+					onLoadPlayerPhotoComplete(event.code);
+					break;
+				case InternalMessages.loadPlayerPhotoFailed:
+					onLoadPlayerPhotoFailed(event.code);
 					break;
 			}
 		}
@@ -297,6 +308,77 @@ package com.sticksports.nativeExtensions.gameCenter
 			}
 		}
 		
+		public static function getPlayerPhoto(id:String, bmd:BitmapData, successCB:Function, errorCB:Function):void 
+		{
+			assertIsAuthenticated();
+			if( localPlayer )
+			{
+				if(_loadingPlayerPhotos[id]) {
+					return;
+				}
+				
+				addLoadPlayerPhotoCompleteSignal(id, successCB);
+				addLoadPlayerPhotoFailedSignal(id, errorCB);
+				var responseKey:String = extensionContext.call( NativeMethods.getPlayerPhoto, id, bmd ) as String;
+				_loadingPlayerPhotos[id] = new LoadingPlayerPhoto(responseKey, bmd);
+			}
+		}
+		
+		public static function addLoadPlayerPhotoCompleteSignal( id:String, cb:Function ):void 
+		{
+			var sig:GCSignal1 = _loadPlayerPhotoCompleteSignals[id];
+			if(!sig) {
+				sig = new GCSignal1( BitmapData );
+				_loadPlayerPhotoCompleteSignals[id] = sig;
+			}
+			sig.addOnce(cb);
+		}
+		
+		public static function addLoadPlayerPhotoFailedSignal( id:String, cb:Function ):void 
+		{
+			var sig:GCSignal0 = _loadPlayerPhotoFailedSignals[id];
+			if(!sig) {
+				sig = new GCSignal0();
+				_loadPlayerPhotoFailedSignals[id] = sig;
+			}
+			sig.addOnce(cb);
+		}
+
+		private static function onLoadPlayerPhotoComplete( id:String ):void 
+		{
+			if(_loadingPlayerPhotos[id] && _loadPlayerPhotoCompleteSignals[id]) {
+				var loadingPhoto:LoadingPlayerPhoto = _loadingPlayerPhotos[id];
+				try {
+					getStoredPlayerPhoto(loadingPhoto.responseKey, loadingPhoto.bitmapData);
+					_loadPlayerPhotoCompleteSignals[id].dispatch(loadingPhoto.bitmapData);
+				} catch (e:Error) {
+					_loadPlayerPhotoFailedSignals[id].dispatch(e);
+				}
+			}
+			cleanupLoadingPhoto(id);
+		}
+		
+		private static function onLoadPlayerPhotoFailed( id:String ):void 
+		{
+			if(_loadPlayerPhotoFailedSignals[id]) {
+				_loadPlayerPhotoFailedSignals[id].dispatch();
+			}
+			cleanupLoadingPhoto(id);
+		}
+		
+		private static function cleanupLoadingPhoto( id:String ):void 
+		{
+			if(_loadPlayerPhotoCompleteSignals[id]) {
+				_loadPlayerPhotoCompleteSignals[id].removeAll();
+				delete _loadPlayerPhotoCompleteSignals[id];
+			}
+			if(_loadPlayerPhotoFailedSignals[id]) {
+				_loadPlayerPhotoFailedSignals[id].removeAll();
+				delete _loadPlayerPhotoFailedSignals[id];
+			}
+			delete _loadingPlayerPhotos[id];
+		}
+		
 		public static function getLeaderboard( category : String, playerScope : int = 0, timeScope : int = 2, rangeStart : int = 1, rangeLength : int = 25 ) : void
 		{
 			assertIsAuthenticated();
@@ -313,6 +395,11 @@ package com.sticksports.nativeExtensions.gameCenter
 			{
 				extensionContext.call( NativeMethods.getAchievements );
 			}
+		}
+		
+		private static function getStoredPlayerPhoto(key:String, inBMD:BitmapData) : void 
+		{
+			extensionContext.call( NativeMethods.getStoredPlayerPhoto, key );
 		}
 		
 		private static function getStoredLeaderboard( key : String ) : GCLeaderboard
@@ -360,7 +447,31 @@ package com.sticksports.nativeExtensions.gameCenter
 			localPlayerAchievementReported.removeAll();
 			localPlayerAchievementReportFailed.removeAll();
 			gameCenterViewRemoved.removeAll();
+			
+			for (var k:String in _loadPlayerPhotoCompleteSignals) {
+				_loadPlayerPhotoCompleteSignals[k].removeAll();
+				delete _loadPlayerPhotoCompleteSignals[k];
+			}
+			for (k in _loadPlayerPhotoFailedSignals) {
+				_loadPlayerPhotoFailedSignals[k].removeAll();
+				delete _loadPlayerPhotoFailedSignals[k];
+			}
+			
 			initialised = false;
 		}
+	}
+}
+import flash.display.BitmapData;
+
+
+class LoadingPlayerPhoto 
+{
+	public var responseKey:String;
+	public var bitmapData:BitmapData;
+	
+	public function LoadingPlayerPhoto(key:String, bmd:BitmapData) 
+	{
+		responseKey = key;
+		bitmapData = bmd;
 	}
 }

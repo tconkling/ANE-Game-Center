@@ -32,5 +32,7 @@
 - (FREObject) getStoredLeaderboard:(FREObject)asKey;
 - (FREObject) getStoredAchievements:(FREObject)asKey;
 - (FREObject) getStoredPlayers:(FREObject)asKey;
+- (FREObject) getPlayerPhoto:(FREObject)asPlayerId;
+- (FREObject) getStoredPlayerPhoto:(FREObject)asKey inBitmapData:(FREObject)asBitmapData;
 
 @end

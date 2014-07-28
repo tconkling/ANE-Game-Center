@@ -85,10 +85,13 @@
     // Check for presence of GKLocalPlayer class.
     BOOL localPlayerClassAvailable = (NSClassFromString(@"GKLocalPlayer")) != nil;
     
+    NSLog(localPlayerClassAvailable ? @"GKLocalPlayer found" : @"GKLocalPlayer not found");
+    
     // The device must be running iOS 4.1 or later.
     NSString *reqSysVer = @"4.1";
     NSString *currSysVer = [[UIDevice currentDevice] systemVersion];
     BOOL osVersionSupported = ([currSysVer compare:reqSysVer options:NSNumericSearch] != NSOrderedAscending);
+    NSLog(osVersionSupported ? @"osVersionSupported == true" : @"osVersionSupported == false");
     
     uint32_t retValue = (localPlayerClassAvailable && osVersionSupported) ? 1 : 0;
     
@@ -118,8 +121,11 @@
                     DISPATCH_STATUS_EVENT( self.context, "", localPlayerAuthenticated );
                 }
                 else
-                {     
-                    DISPATCH_STATUS_EVENT( self.context, "", localPlayerNotAuthenticated );
+                {
+                    if(error != nil) {
+                        NSLog(error.localizedDescription);
+                    }
+                    DISPATCH_STATUS_EVENT( self.context, error ? [error.localizedDescription UTF8String] : "", localPlayerNotAuthenticated );
                 }
             }];
         }
@@ -413,7 +419,7 @@
         DISPATCH_STATUS_EVENT( self.context, "", notAuthenticated );
         return NULL;
     }
-    
+
     GKLeaderboard* leaderboard = [[GKLeaderboard alloc] init];
     
     NSString* propertyString;
@@ -607,6 +613,121 @@
         return friends;
     }
     [friendDetails release];
+    return NULL;
+}
+
+- (FREObject) getStoredPlayerPhoto:(FREObject)asKey inBitmapData:(FREObject)asBitmapData
+{
+    NSString* key;
+    if( [self.converter FREGetObject:asKey asString:&key] != FRE_OK ) return NULL;
+    
+    UIImage* photo = [self getReturnObject:key];
+    if(photo == nil) {
+        return NULL;
+    }
+    
+    FREBitmapData bitmapData;
+    FREAcquireBitmapData(asBitmapData, &bitmapData);
+    
+    CGImageRef imageRef = [photo CGImage];
+    NSUInteger width = bitmapData.width;
+    NSUInteger height = bitmapData.height;
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    unsigned char *rawData = malloc(height * width * 4);
+    NSUInteger bytesPerPixel = 4;
+    NSUInteger bytesPerRow = bytesPerPixel * width;
+    NSUInteger bitsPerComponent = 8;
+    
+    NSLog(@"width: %d, height: %d", (uint)width, (uint)height);
+    
+    CGContextRef cgCtx = CGBitmapContextCreate(rawData, width, height, bitsPerComponent, bytesPerRow, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+    CGContextDrawImage(cgCtx, CGRectMake(0, 0, width, height), imageRef);
+    
+    NSLog(@"660");
+    
+    // Pixels are now it rawData in the format RGBA8888
+    // Now loop over each pixel to write them into the AS3 BitmapData memory
+    int x, y;
+    // There may be extra pixels in each row due to the value of lineStride32.
+    // We'll skip over those as needed.
+    int offset = bitmapData.lineStride32 - bitmapData.width;
+    int offset2 = bytesPerRow - bitmapData.width*4;
+    int byteIndex = 0;
+    uint32_t *bitmapDataPixels = bitmapData.bits32;
+    
+    NSLog(@"672");
+    for (y=0; y<bitmapData.height; y++)
+    {
+        for (x=0; x<bitmapData.width; x++, bitmapDataPixels++, byteIndex += 4)
+        {
+            // Values are currently in RGBA7777, so each color value is currently a separate number.
+            int red     = (rawData[byteIndex]);
+            int green   = (rawData[byteIndex + 1]);
+            int blue    = (rawData[byteIndex + 2]);
+            int alpha   = (rawData[byteIndex + 3]);
+            
+            // Combine values into ARGB32
+            *bitmapDataPixels = (alpha << 24) | (red << 16) | (green << 8) | blue;
+        }
+        
+        bitmapDataPixels += offset;
+        byteIndex += offset2;
+    }
+    
+    NSLog(@"691");
+    
+    // Free the memory we allocated
+    free(rawData);
+    
+    // Tell Flash which region of the BitmapData changes (all of it here)
+    FREInvalidateBitmapDataRect(asBitmapData, 0, 0, bitmapData.width, bitmapData.height);
+    
+    // Release our control over the BitmapData
+    
+    NSLog(@"Exiting getPlayerPhoto()");
+    
+    
+    
+    [photo release];
+    return NULL;
+}
+
+
+- (FREObject) getPlayerPhoto:(FREObject)asPlayerId
+{
+    NSLog(@"Entering getPlayerPhoto()");
+    NSString* playerId;
+    if( [self.converter FREGetObject:asPlayerId asString:&playerId] != FRE_OK )
+        return NULL;
+    
+    NSLog(@"Entering getPlayerPhoto()");
+    
+    NSArray* idArray = [NSArray arrayWithObject:playerId];
+
+    [GKPlayer loadPlayersForIdentifiers:idArray withCompletionHandler:
+    ^(NSArray* players, NSError* error) {
+        
+        NSLog(@"Entering block 1");
+        if(players.count > 0) {
+            GKPlayer *player = players[0];
+            [player loadPhotoForSize:GKPhotoSizeSmall withCompletionHandler:
+             ^(UIImage *photo, NSError *error) {
+                   NSLog(@"Entering block 2");
+                 if(error != nil) {
+                     DISPATCH_STATUS_EVENT( self.context, playerId.UTF8String, loadPlayerPhotoFailed );
+                     return;
+                 }
+                 
+                 NSString *key = [self storeReturnObject:photo];
+                 DISPATCH_STATUS_EVENT( self.context, playerId.UTF8String, loadPlayerPhotoComplete );
+                 
+             }];
+        }
+    }];
+    
+   
+    
     return NULL;
 }
 
