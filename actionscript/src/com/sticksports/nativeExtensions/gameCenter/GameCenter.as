@@ -319,8 +319,8 @@ package com.sticksports.nativeExtensions.gameCenter
 				
 				addLoadPlayerPhotoCompleteSignal(id, successCB);
 				addLoadPlayerPhotoFailedSignal(id, errorCB);
-				var responseKey:String = extensionContext.call( NativeMethods.getPlayerPhoto, id, bmd ) as String;
-				_loadingPlayerPhotos[id] = new LoadingPlayerPhoto(responseKey, bmd);
+				extensionContext.call( NativeMethods.getPlayerPhoto, id, bmd ) as String;
+				_loadingPlayerPhotos[id] = new bmd;
 			}
 		}
 		
@@ -347,12 +347,15 @@ package com.sticksports.nativeExtensions.gameCenter
 		private static function onLoadPlayerPhotoComplete( id:String ):void 
 		{
 			if(_loadingPlayerPhotos[id] && _loadPlayerPhotoCompleteSignals[id]) {
-				var loadingPhoto:LoadingPlayerPhoto = _loadingPlayerPhotos[id];
+				var loadingPhoto:BitmapData = _loadingPlayerPhotos[id];
 				try {
-					getStoredPlayerPhoto(loadingPhoto.responseKey, loadingPhoto.bitmapData);
-					_loadPlayerPhotoCompleteSignals[id].dispatch(loadingPhoto.bitmapData);
+					if(getStoredPlayerPhoto(id, loadingPhoto)) {
+						_loadPlayerPhotoCompleteSignals[id].dispatch(loadingPhoto)
+					} else {
+						_loadPlayerPhotoFailedSignals[id].dispatch();
+					}
 				} catch (e:Error) {
-					_loadPlayerPhotoFailedSignals[id].dispatch(e);
+					_loadPlayerPhotoFailedSignals[id].dispatch();
 				}
 			}
 			cleanupLoadingPhoto(id);
@@ -399,7 +402,7 @@ package com.sticksports.nativeExtensions.gameCenter
 		
 		private static function getStoredPlayerPhoto(key:String, inBMD:BitmapData) : void 
 		{
-			extensionContext.call( NativeMethods.getStoredPlayerPhoto, key );
+			extensionContext.call( NativeMethods.getStoredPlayerPhoto, key, inBMD );
 		}
 		
 		private static function getStoredLeaderboard( key : String ) : GCLeaderboard
@@ -459,19 +462,5 @@ package com.sticksports.nativeExtensions.gameCenter
 			
 			initialised = false;
 		}
-	}
-}
-import flash.display.BitmapData;
-
-
-class LoadingPlayerPhoto 
-{
-	public var responseKey:String;
-	public var bitmapData:BitmapData;
-	
-	public function LoadingPlayerPhoto(key:String, bmd:BitmapData) 
-	{
-		responseKey = key;
-		bitmapData = bmd;
 	}
 }
