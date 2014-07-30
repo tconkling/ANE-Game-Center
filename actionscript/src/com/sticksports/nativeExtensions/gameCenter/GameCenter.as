@@ -319,8 +319,8 @@ package com.sticksports.nativeExtensions.gameCenter
 				
 				addLoadPlayerPhotoCompleteSignal(id, successCB);
 				addLoadPlayerPhotoFailedSignal(id, errorCB);
-				extensionContext.call( NativeMethods.getPlayerPhoto, id, bmd ) as String;
-				_loadingPlayerPhotos[id] = new bmd;
+				extensionContext.call( NativeMethods.getPlayerPhoto, id );
+				_loadingPlayerPhotos[id] = bmd;
 			}
 		}
 		
