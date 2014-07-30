@@ -349,8 +349,9 @@ package com.sticksports.nativeExtensions.gameCenter
 			if(_loadingPlayerPhotos[id] && _loadPlayerPhotoCompleteSignals[id]) {
 				var loadingPhoto:BitmapData = _loadingPlayerPhotos[id];
 				try {
-					if(getStoredPlayerPhoto(id, loadingPhoto)) {
-						_loadPlayerPhotoCompleteSignals[id].dispatch(loadingPhoto)
+					var ret:Boolean = getStoredPlayerPhoto(id, loadingPhoto);
+					if(true) { // XXX why isn't the ANE returning true?
+						_loadPlayerPhotoCompleteSignals[id].dispatch(loadingPhoto);
 					} else {
 						_loadPlayerPhotoFailedSignals[id].dispatch();
 					}

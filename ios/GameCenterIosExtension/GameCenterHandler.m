@@ -640,26 +640,28 @@
 
 - (FREObject) getStoredPlayerPhoto:(FREObject)playerId inBitmapData:(FREObject)asBitmapData
 {
-    FREObject success = nil;
+    FREObject success;
+    uint32_t resultValue = 0;
     
     NSString* key;
     if( [self.converter FREGetObject:playerId asString:&key] != FRE_OK ) {
-        FRENewObjectFromBool(false, success);
+        FRENewObjectFromBool(resultValue, &success);
+        NSLog(@"couldn't get key");
         return success;
     }
     UIImage* photo = [self getStoredReturnedPlayerPhoto:key];
     
     if(photo == nil) {
         NSLog(@"No stored photo for player id %@", playerId);
-        FRENewObjectFromBool(false, success);
+        FRENewObjectFromBool(resultValue, &success);
         return success;
     }
 
     FREBitmapData bitmapData;
     FREResult rslt = FREAcquireBitmapData(asBitmapData, &bitmapData);
     if(rslt != FRE_OK) {
-        NSLog(@"Error: invalid bitmap passed to getStoredPlayerPhoto");
-        FRENewObjectFromBool(false, success);
+        NSLog(@"Error: invalid bitmapdata passed to getStoredPlayerPhoto");
+        FRENewObjectFromBool(resultValue, &success);
         [photo release];
         return success;
     }
@@ -706,10 +708,17 @@
     
     FREInvalidateBitmapDataRect(asBitmapData, 0, 0, bitmapData.width, bitmapData.height);
     FREReleaseBitmapData(asBitmapData);
-    
-    
+
     [photo release];
-    FRENewObjectFromBool(true, success);
+    
+    
+    resultValue = 1;
+    if (FRENewObjectFromBool(resultValue, &success) == FRE_OK) {
+        NSLog(@"Returning true (success) from getStoredPlayerPhoto");
+    } else {
+        NSLog(@"Error trying to return true (success) from getStoredPlayerPhoto");
+        return NULL;
+    }
     return success;
 }
 
