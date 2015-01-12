@@ -26,6 +26,7 @@
 }
 @property FREContext context;
 @property (retain)NSMutableDictionary* returnObjects;
+@property (retain)NSMutableDictionary* playerPhotos;
 @property (retain)id<BoardsController> boardsController;
 @property (retain)GC_TypeConversion* converter;
 
@@ -33,7 +34,10 @@
 
 @implementation GameCenterHandler
 
-@synthesize context, returnObjects, boardsController, converter;
+@synthesize context, returnObjects, playerPhotos, boardsController, converter;
+
+
+
 
 - (id)initWithContext:(FREContext)extensionContext
 {
@@ -42,6 +46,7 @@
     {
         context = extensionContext;
         returnObjects = [[NSMutableDictionary alloc] init];
+        playerPhotos = [[NSMutableDictionary alloc] init];
         converter = [[GC_TypeConversion alloc] init];
     }
     return self;
@@ -75,9 +80,26 @@
 
 - (id) getReturnObject:(NSString*) key
 {
+    NSLog(@"getReturnObject:%@", key);
     id object = [self.returnObjects valueForKey:key];
     [self.returnObjects setValue:nil forKey:key];
     return object;
+}
+
+- (void) storeReturnedPlayerPhoto:(NSString*)playerId playerPhoto:(UIImage *)photo
+{
+    NSLog(@"storeReturnedPlayerPhoto:%@", playerId);
+    if(photo == nil) {
+        NSLog(@"storeReturnedPlayerPhoto: photo is nil");
+    }
+    [self.playerPhotos setObject:photo forKey:playerId];
+}
+
+- (UIImage *) getStoredReturnedPlayerPhoto:(NSString*)key
+{
+    UIImage * photo = [self.playerPhotos objectForKey:key];
+    [self.playerPhotos setValue:nil forKey:key];
+    return photo;
 }
 
 - (FREObject) isSupported
@@ -85,10 +107,13 @@
     // Check for presence of GKLocalPlayer class.
     BOOL localPlayerClassAvailable = (NSClassFromString(@"GKLocalPlayer")) != nil;
     
+    NSLog(localPlayerClassAvailable ? @"GKLocalPlayer found" : @"GKLocalPlayer not found");
+    
     // The device must be running iOS 4.1 or later.
     NSString *reqSysVer = @"4.1";
     NSString *currSysVer = [[UIDevice currentDevice] systemVersion];
     BOOL osVersionSupported = ([currSysVer compare:reqSysVer options:NSNumericSearch] != NSOrderedAscending);
+    NSLog(osVersionSupported ? @"osVersionSupported == true" : @"osVersionSupported == false");
     
     uint32_t retValue = (localPlayerClassAvailable && osVersionSupported) ? 1 : 0;
     
@@ -118,8 +143,11 @@
                     DISPATCH_STATUS_EVENT( self.context, "", localPlayerAuthenticated );
                 }
                 else
-                {     
-                    DISPATCH_STATUS_EVENT( self.context, "", localPlayerNotAuthenticated );
+                {
+                    if(error != nil) {
+                        NSLog(@"Error in authenticateLocalPlayer%@", error.localizedDescription);
+                    }
+                    DISPATCH_STATUS_EVENT( self.context, error ? [error.localizedDescription UTF8String] : "", localPlayerNotAuthenticated );
                 }
             }];
         }
@@ -413,7 +441,7 @@
         DISPATCH_STATUS_EVENT( self.context, "", notAuthenticated );
         return NULL;
     }
-    
+
     GKLeaderboard* leaderboard = [[GKLeaderboard alloc] init];
     
     NSString* propertyString;
@@ -607,6 +635,121 @@
         return friends;
     }
     [friendDetails release];
+    return NULL;
+}
+
+- (FREObject) getStoredPlayerPhoto:(FREObject)playerId inBitmapData:(FREObject)asBitmapData
+{
+    FREObject success;
+    uint32_t resultValue = 0;
+    
+    NSString* key;
+    if( [self.converter FREGetObject:playerId asString:&key] != FRE_OK ) {
+        FRENewObjectFromBool(resultValue, &success);
+        NSLog(@"couldn't get key");
+        return success;
+    }
+    UIImage* photo = [self getStoredReturnedPlayerPhoto:key];
+    
+    if(photo == nil) {
+        NSLog(@"No stored photo for player id %@", playerId);
+        FRENewObjectFromBool(resultValue, &success);
+        return success;
+    }
+
+    FREBitmapData bitmapData;
+    FREResult rslt = FREAcquireBitmapData(asBitmapData, &bitmapData);
+    if(rslt != FRE_OK) {
+        NSLog(@"Error: invalid bitmapdata passed to getStoredPlayerPhoto");
+        FRENewObjectFromBool(resultValue, &success);
+        [photo release];
+        return success;
+    }
+    
+    CGImageRef imageRef = [photo CGImage];
+    NSUInteger width = bitmapData.width;
+    NSUInteger height = bitmapData.height;
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    unsigned char *rawData = malloc(height * width * 4);
+    NSUInteger bytesPerPixel = 4;
+    NSUInteger bytesPerRow = bytesPerPixel * width;
+    NSUInteger bitsPerComponent = 8;
+    
+    CGContextRef cgCtx = CGBitmapContextCreate(rawData, width, height, bitsPerComponent, bytesPerRow, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+    CGContextDrawImage(cgCtx, CGRectMake(0, 0, width, height), imageRef);
+    
+    int x, y;
+    int offset = bitmapData.lineStride32 - bitmapData.width;
+    int offset2 = bytesPerRow - bitmapData.width*4;
+    int byteIndex = 0;
+    uint32_t *bitmapDataPixels = bitmapData.bits32;
+    
+    for (y=0; y<bitmapData.height; y++)
+    {
+        for (x=0; x<bitmapData.width; x++, bitmapDataPixels++, byteIndex += 4)
+        {
+            // Values are currently in RGBA7777, so each color value is currently a separate number.
+            int red     = (rawData[byteIndex]);
+            int green   = (rawData[byteIndex + 1]);
+            int blue    = (rawData[byteIndex + 2]);
+            int alpha   = (rawData[byteIndex + 3]);
+            
+            // Combine values into ARGB32
+            *bitmapDataPixels = (alpha << 24) | (red << 16) | (green << 8) | blue;
+        }
+        
+        bitmapDataPixels += offset;
+        byteIndex += offset2;
+    }
+    
+    // Free the memory we allocated
+    free(rawData);
+    
+    FREInvalidateBitmapDataRect(asBitmapData, 0, 0, bitmapData.width, bitmapData.height);
+    FREReleaseBitmapData(asBitmapData);
+
+    [photo release];
+    
+    
+    resultValue = 1;
+    if (FRENewObjectFromBool(resultValue, &success) == FRE_OK) {
+        NSLog(@"Returning true (success) from getStoredPlayerPhoto");
+    } else {
+        NSLog(@"Error trying to return true (success) from getStoredPlayerPhoto");
+        return NULL;
+    }
+    return success;
+}
+
+
+
+- (FREObject) getPlayerPhoto:(FREObject)asPlayerId
+{
+    NSString* playerId;
+    if( [self.converter FREGetObject:asPlayerId asString:&playerId] != FRE_OK )
+        return NULL;
+
+    NSArray* idArray = [NSArray arrayWithObject:playerId];
+
+    [GKPlayer loadPlayersForIdentifiers:idArray withCompletionHandler:
+    ^(NSArray* players, NSError* error) {
+        if(players.count > 0) {
+            GKPlayer *player = players[0];
+            [player loadPhotoForSize:GKPhotoSizeSmall withCompletionHandler:
+             ^(UIImage *photo, NSError *error) {
+                 if(error != nil) {
+                     DISPATCH_STATUS_EVENT( self.context, playerId.UTF8String, loadPlayerPhotoFailed );
+                     return;
+                 }
+                 [photo retain];
+                 [self storeReturnedPlayerPhoto:playerId playerPhoto:photo];
+                 DISPATCH_STATUS_EVENT( self.context, playerId.UTF8String, loadPlayerPhotoComplete );
+                 
+             }];
+        }
+    }];
+    
     return NULL;
 }
 

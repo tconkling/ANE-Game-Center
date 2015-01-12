@@ -25,5 +25,7 @@
 #define loadLeaderboardFailed "LoadLeaderboardFailed"
 #define loadAchievementsComplete "LoadAchievementsComplete"
 #define loadAchievementsFailed "LoadAchievementsFailed"
+#define loadPlayerPhotoComplete "LoadPlayerPhotoComplete"
+#define loadPlayerPhotoFailed "LoadPlayerPhotoFailed"
 
 #endif

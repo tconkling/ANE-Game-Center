@@ -20,5 +20,7 @@ package com.sticksports.nativeExtensions.gameCenter
 		internal static const getStoredPlayers : String = "GC_getStoredPlayers";
 		internal static const getAchievements : String = "GC_getAchievements";
 		internal static const getStoredAchievements : String = "GC_getStoredAchievements";
+		internal static const getPlayerPhoto:String = "GC_getPlayerPhoto";
+		internal static const getStoredPlayerPhoto:String = "GC_getStoredPlayerPhoto";
 	}
 }
