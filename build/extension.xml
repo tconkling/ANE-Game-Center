@@ -1,12 +1,12 @@
-<extension xmlns="http://ns.adobe.com/air/extension/15.0">
-	<id>com.sticksports.nativeExtensions.GameCenter</id>
-	<versionNumber>0.7.0</versionNumber>
+<extension xmlns="http://ns.adobe.com/air/extension/22.0">
+	<id>com.freshplanet.ane.AirGameCenter</id>
+	<versionNumber>1.0.0</versionNumber>
 	<platforms>
 		<platform name="iPhone-ARM">
 			<applicationDeployment>
-				<nativeLibrary>libGameCenterIosExtension.a</nativeLibrary>
-				<initializer>GameCenterExtensionInitializer</initializer>
-				<finalizer>GameCenterExtensionFinalizer</finalizer>
+				<nativeLibrary>libAirGameCenter.a</nativeLibrary>
+				<initializer>AirGameCenterInitializer</initializer>
+				<finalizer>AirGameCenterFinalizer</finalizer>
 			</applicationDeployment>
 		</platform>
 		<platform name="default">
