@@ -166,7 +166,7 @@ DEFINE_ANE_FUNCTION(authenticateLocalPlayer) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     
     @try {
@@ -215,7 +215,7 @@ DEFINE_ANE_FUNCTION(authenticateLocalPlayer) {
 DEFINE_ANE_FUNCTION(isAuthenticated) {
     
     BOOL isAuthenticated = [GKLocalPlayer localPlayer].authenticated;
-    return FPANE_BOOLToFREObject(isAuthenticated);
+    return AirGameCenter_FPANE_BOOLToFREObject(isAuthenticated);
 
 }
 
@@ -224,14 +224,14 @@ DEFINE_ANE_FUNCTION(getLocalPlayer) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     GKLocalPlayer* localPlayer = [GKLocalPlayer localPlayer];
     if ( localPlayer && localPlayer.isAuthenticated )
     {
         NSDictionary *playerDict = playerToDictionary((GKPlayer*)localPlayer);//[[NSMutableDictionary alloc] init];
         NSString *playerString = dictionaryToNSString(playerDict);
-        return FPANE_NSStringToFREObject(playerString);
+        return AirGameCenter_FPANE_NSStringToFREObject(playerString);
         
     }
     else
@@ -249,13 +249,13 @@ DEFINE_ANE_FUNCTION(getStoredPlayerPhoto) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     @try {
-        NSString *playerId = FPANE_FREObjectToNSString((argv[0]));
+        NSString *playerId = AirGameCenter_FPANE_FREObjectToNSString((argv[0]));
         UIImage *photo = [controller getStoredPlayerPhoto:playerId];
         if (photo != nil) {
-            return FPANE_UIImageToFREBitmapData(photo);
+            return AirGameCenter_FPANE_UIImageToFREBitmapData(photo);
         }
         
     }
@@ -273,7 +273,7 @@ DEFINE_ANE_FUNCTION(loadLeaderboards) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
    [GKLeaderboard loadLeaderboardsWithCompletionHandler:^(NSArray<GKLeaderboard *> * _Nullable leaderboards, NSError * _Nullable error) {
       
@@ -331,10 +331,10 @@ DEFINE_ANE_FUNCTION(showLeaderboard) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     @try {
-        NSString *leaderboardId = FPANE_FREObjectToNSString((argv[0]));
+        NSString *leaderboardId = AirGameCenter_FPANE_FREObjectToNSString((argv[0]));
         
         GKGameCenterViewController *leaderboardViewController = [[GKGameCenterViewController alloc] init];
         leaderboardViewController.viewState = GKGameCenterViewControllerStateLeaderboards;
@@ -361,7 +361,7 @@ DEFINE_ANE_FUNCTION(showAchievements) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     @try {
         
@@ -386,7 +386,7 @@ DEFINE_ANE_FUNCTION(loadAchievements) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
 
     NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
     NSMutableArray *achievementsArray = [[NSMutableArray alloc] init];
@@ -419,11 +419,11 @@ DEFINE_ANE_FUNCTION(reportScore) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     @try {
-        NSString *leaderboardId = FPANE_FREObjectToNSString((argv[0]));
-        NSInteger score = FPANE_FREObjectToInt((argv[1]));
+        NSString *leaderboardId = AirGameCenter_FPANE_FREObjectToNSString((argv[0]));
+        NSInteger score = AirGameCenter_FPANE_FREObjectToInt((argv[1]));
        
         GKScore *gkScore = [[GKScore alloc] initWithLeaderboardIdentifier:leaderboardId];
         [gkScore setValue:score];
@@ -455,12 +455,12 @@ DEFINE_ANE_FUNCTION(reportAchievement) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     @try {
-        NSString *identifier = FPANE_FREObjectToNSString((argv[0]));
-        BOOL showCompletionBanner = FPANE_FREObjectToBool((argv[1]));
-        double percentComplete = FPANE_FREObjectToDouble((argv[2]));
+        NSString *identifier = AirGameCenter_FPANE_FREObjectToNSString((argv[0]));
+        BOOL showCompletionBanner = AirGameCenter_FPANE_FREObjectToBool((argv[1]));
+        double percentComplete = AirGameCenter_FPANE_FREObjectToDouble((argv[2]));
         
         GKAchievement *gkAchievement = [[GKAchievement alloc] initWithIdentifier:identifier];
         [gkAchievement setPercentComplete:percentComplete];
@@ -491,7 +491,7 @@ DEFINE_ANE_FUNCTION(loadRecentPlayers) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
    
     GKLocalPlayer *localPlayer = [GKLocalPlayer localPlayer];
     [localPlayer loadRecentPlayersWithCompletionHandler:^(NSArray<GKPlayer *> * _Nullable recentPlayers, NSError * _Nullable error) {
@@ -523,10 +523,10 @@ DEFINE_ANE_FUNCTION(loadPlayerPhoto) {
     AirGameCenter* controller = GetAirGameCenterContextNativeData(context);
     
     if (!controller)
-        return FPANE_CreateError(@"context's AirGameCenter is null", 0);
+        return AirGameCenter_FPANE_CreateError(@"context's AirGameCenter is null", 0);
     
     @try {
-        NSString *playerID = FPANE_FREObjectToNSString((argv[0]));
+        NSString *playerID = AirGameCenter_FPANE_FREObjectToNSString((argv[0]));
         [GKPlayer loadPlayersForIdentifiers:@[playerID] withCompletionHandler:^(NSArray<GKPlayer *> * _Nullable players, NSError * _Nullable error) {
             
             if (error != nil) {
