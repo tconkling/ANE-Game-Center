@@ -298,6 +298,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 1AAB7A60D9709716BE9CB317 /* Pods-AirGameCenter.debug.xcconfig */;
 			buildSettings = {
+				CLANG_MODULES_AUTOLINK = NO;
 				DEVELOPMENT_TEAM = HWKC8H7H6U;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -309,6 +310,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 76614DDD62B47047E4A8B47D /* Pods-AirGameCenter.release.xcconfig */;
 			buildSettings = {
+				CLANG_MODULES_AUTOLINK = NO;
 				DEVELOPMENT_TEAM = HWKC8H7H6U;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
