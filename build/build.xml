@@ -12,6 +12,11 @@
 
 	<target name="all" depends="ios,swc,package" description="Full build of extension"/>
 
+	<target name="clean" description="Removes generated files and directories">
+		<delete dir="temp" verbose="false"/>
+		<delete dir="../ios/build/" verbose="false"/>
+	</target>
+
 	<!-- iOS -->
 	<target name="ios" description="Build iOS Library">
 
